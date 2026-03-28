@@ -1,0 +1,18 @@
+[package]
+name = "Jira-Ticket-Database"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+base64 = { version = "=0.22.1" }
+regex-lite = { version = "=0.1.9" }
+rusqlite = { version = "=0.39.0", features = [ "bundled" ] }
+serde = { version = "=1.0.226", default-features = false, features = [ "derive" ] }
+serde_json = { version = "=1.0.145", default-features = false, features = [ "std" ] }
+ureq = { version = "=3.3.0", default-features = false, features = [ "rustls" ] }
+
+[profile.release]
+strip = "symbols"
+lto = true
+codegen-units = 1
+panic = "abort"
