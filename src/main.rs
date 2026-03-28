@@ -17,11 +17,15 @@ fn main() {
         Err(e) => panic!("Unable to read config.json, error: {e}")
     };
 
+    println!("Getting data from Jira...");
+
     let time_regex = Regex::new(r"^(?:(?<days>\d+)d)?\s*(?:(?<hours>\d+)h)?\s*(?:(?<minutes>\d+)m)?$").unwrap();
     let api_response = ureq::get(format!("{}/rest/api/3/search/jql?jql=assignee=currentUser()&fields=id,timetracking&maxResults=5000", config.domain))
          .header("Accept", "application/json")
          .header("Authorization", &format!("Basic {}", general_purpose::STANDARD.encode(format!("{}:{}", config.email, config.key))))
          .call();
+
+    println!("Processing data...");
 
     match api_response {
         Ok(mut k) => match serde_json::from_str::<JiraResponse>(&k.body_mut().read_to_string().unwrap()) {
@@ -31,7 +35,7 @@ fn main() {
         Err(e) => println!("Jira request error: {e}")
     }
 
-    println!("Updated tickets:");
+    println!("\nUpdated tickets:");
 
     db_connection.prepare("SELECT key, SUM(minutes) FROM IssueUpdates GROUP BY key").unwrap()
                  .query_map([], |row| Ok(DatabaseIssue {
@@ -45,7 +49,7 @@ fn main() {
                                             .query_one([], |row| Ok(row.get::<_, i32>(0))).unwrap()
                                             .unwrap();
 
-    println!("Total time: {}h {}m", total_update_minutes / 60, total_update_minutes % 60);
+    println!("Total time: {}h {}m\n\nDone!", total_update_minutes / 60, total_update_minutes % 60);
 }
 
 fn process_jira_issue(jira_issue: &JiraIssue, db_connection: &Connection, time_regex: &Regex) {
