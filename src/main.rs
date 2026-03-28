@@ -46,10 +46,7 @@ fn main() {
                                             .query_one([], |row| Ok(row.get::<_, i32>(0))).unwrap()
                                             .unwrap();
 
-    let update_hours = total_update_minutes / 60;
-    let update_minutes = total_update_minutes % 60;
-
-    println!("Total time: {}h {}m", update_hours, update_minutes);
+    println!("Total time: {}h {}m", total_update_minutes / 60, total_update_minutes % 60);
 }
 
 fn process_jira_issue(jira_issue: &JiraIssue, db_connection: &Connection, time_regex: &Regex) {
@@ -59,7 +56,6 @@ fn process_jira_issue(jira_issue: &JiraIssue, db_connection: &Connection, time_r
                                           hours: row.get(1).unwrap(),
                                           minutes: row.get(2).unwrap()
                                       })).ok();
-
     match db_issue_stats {
         Some(DatabaseIssue { key: issue_key, hours: db_issue_hours, minutes: db_issue_minutes }) => {
             let jira_time_parts = parse_time(jira_issue.fields.timetracking.timeSpent.as_ref().map(String::as_str).unwrap_or(""), time_regex);
@@ -86,12 +82,10 @@ fn handle_issue_with_time_change(issue_key: &str, (jira_hours, jira_minutes): (i
         let old_total_minutes = db_hours * 60 + db_minutes;
         let new_total_minutes = jira_hours * 60 + jira_minutes;
         let updates_total_minutes = hour_updates * 60 + minute_updates;
+        let total_diff_minutes = new_total_minutes - updates_total_minutes - old_total_minutes;
+        let params = params![ &issue_key, total_diff_minutes / 60, total_diff_minutes % 60 ];
 
-        let actual_time_diff = new_total_minutes - updates_total_minutes - old_total_minutes;
-        let updated_hours = actual_time_diff / 60;
-        let updated_minutes = actual_time_diff % 60;
-
-        db_connection.execute("INSERT INTO IssueUpdates(key, hoursChange, minutesChange) VALUES(?1, ?2, ?3)", params![ &issue_key, updated_hours, updated_minutes ]).unwrap();
+        db_connection.execute("INSERT INTO IssueUpdates(key, hoursChange, minutesChange) VALUES(?1, ?2, ?3)", params).unwrap();
     }
 }
 
