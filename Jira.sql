@@ -1,10 +1,9 @@
 CREATE TABLE Issues (
     key TEXT PRIMARY KEY,
-    minutes INTEGER DEFAULT 0
+    minutes INTEGER NOT NULL
 );
 
 CREATE TABLE IssueUpdates (
-    id INTEGER PRIMARY KEY,
-    key TEXT,
-    minutes INTEGER
+    key TEXT NOT NULL,
+    minutes INTEGER NOT NULL
 );
